@@ -10,6 +10,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from ui_sarview import *
+from app_export import *
 import subprocess
 
 class SarView (QMainWindow, Ui_SarView):
@@ -19,14 +20,45 @@ class SarView (QMainWindow, Ui_SarView):
 	def __init__(self, Parent=None, filename=None):
 		super(QMainWindow,self).__init__(Parent)
 		self.setupUi(self)
+
 		self.connect(self.action_Open, SIGNAL("activated()"), self.openFile)
+		self.connect(self.action_Plot, SIGNAL("activated()"), self.drawGraph)
+		self.connect(self.action_Export, SIGNAL("activated()"), self.exportSettings)
+		self.connect(self.action_Lines, SIGNAL("triggered(bool)"), self.toggleLines)
+		self.connect(self.action_All, SIGNAL("triggered(bool)"), self.allCombos)
 		self.connect(self.metricCombo, SIGNAL("currentIndexChanged(QString)"), self.metricSelect)
 		self.connect(self.deviceCombo, SIGNAL("currentIndexChanged(QString)"), self.deviceSelect)
-		self.connect(self.graphButton, SIGNAL("clicked()"), self.drawGraph)
+
 		self.device_dict={}
 		self.metric_dict={}
+		
+		self.connect(self.action_Devices, SIGNAL("activated()"), self.deviceCombo.showPopup)
+		self.connect(self.action_Metrics, SIGNAL("activated()"), self.metricCombo.showPopup)
+
+		self.output = None
+		self.format = None
+		self.exportDialog=Export(self)
+		self.connect(self.exportDialog, SIGNAL("accepted()"), self.exportGraph)
+
 		if(filename != None):
 			self.processFile(filename)
+
+	def devpop(self):
+		self.deviceCombo.showPopup()	
+
+	def allCombos(self, allBool):
+		self.comboTable.setRangeSelected(QTableWidgetSelectionRange(0,0,self.comboTable.rowCount()-1,0),allBool)
+			
+	def exportSettings(self):
+		self.exportDialog.show()
+
+	def exportGraph(self):
+		self.output = self.exportDialog.filename
+		self.format = self.exportDialog.format			
+		self.drawGraph()
+
+	def toggleLines(self, value):
+		print value
 
 	def drawGraph(self):
 		plots=[]
@@ -43,6 +75,12 @@ class SarView (QMainWindow, Ui_SarView):
 			plots.append(filter)
 		
 		proc=subprocess.Popen(["gnuplot","-p"], stdin=subprocess.PIPE)
+		if self.output != None:
+			proc.stdin.write("set terminal \"%s\"\n"%(self.format.lower()))
+			proc.stdin.write("set output \"%s\"\n"%(self.output))
+			self.output = None
+			self.format = None
+	
 		if self.mode==SarView.MODE_METRIC:
 			proc.stdin.write("set title \"%s\"\n"%(metname))
 		elif self.mode==SarView.MODE_DEVICE:
@@ -62,6 +100,7 @@ class SarView (QMainWindow, Ui_SarView):
 		for (row,device) in enumerate(self.metric_dict[str(metric)]):
 			self.comboTable.insertRow(row)
 			self.comboTable.setItem(row, 0, QTableWidgetItem(device))
+		self.allCombos(True)
 
 	def deviceSelect(self, metric):
 		self.mode=SarView.MODE_DEVICE
@@ -72,6 +111,7 @@ class SarView (QMainWindow, Ui_SarView):
 		for (row,metric) in enumerate(self.device_dict[str(metric)]):
 			self.comboTable.insertRow(row)
 			self.comboTable.setItem(row, 0, QTableWidgetItem(metric))
+		self.allCombos(True)
 
 	def processFile(self, filename):
 		self.filename=filename
