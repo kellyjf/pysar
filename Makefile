@@ -3,7 +3,7 @@ UIFILES := ui_sarview.py ui_export.py
 
 all : $(UIFILES)
 
-test:
+test: $(UIFILES)
 	python sarview.py test.sadf
 
 ui_%.py : %.ui
