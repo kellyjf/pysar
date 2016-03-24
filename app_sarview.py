@@ -90,10 +90,8 @@ class SarView (QMainWindow, Ui_SarView):
 		metname=str(self.metricCombo.currentText())
 		devname=str(self.deviceCombo.currentText())
 		for rng in self.comboTable.selectedRanges():
-			print range(rng.topRow(),rng.bottomRow()+1)
 			for row in range(rng.topRow(),rng.bottomRow()+1):
 				item=self.comboTable.item(row,0)
-				print row, item, item.text()
 				if self.mode==SarView.MODE_METRIC:
 					devname=item.text()
 					filter=" \"<(sadf -U -- %s %s | awk -vdev=%s -vmet=%s 'NR==1{off=$3}$4==dev&&$5==met{print $3-off,$6}')\" using 1:2 with lines title \"%s\""%(self.sarflag, self.filename, devname, metname,devname)
