@@ -19,7 +19,7 @@ class SarView (QMainWindow, Ui_SarView):
 
 	options = [ ('-A','All'), ('-b', 'I/O Transfer Rates') , ('-d', 'Block Devices'),
  		('-H', 'Hugepages') ,('-I ALL', 'Interrupts'), ('-n ALL', 'Network'),
-		('-P', 'Processor') , ('-q', 'Run Queue'),('-r', 'Memory Use'),
+		('-P ALL', 'Processor') , ('-q', 'Run Queue'),('-r', 'Memory Use'),
 		('-u ALL', 'CPU Use'), ('-v', 'Inodes and Files'),('-W', 'Swap'),
 		('-y', 'TTY Activity') ]
 
