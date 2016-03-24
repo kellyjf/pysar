@@ -125,9 +125,10 @@ class SarView (QMainWindow, Ui_SarView):
 		self.comboTable.setHorizontalHeaderItem(0, QTableWidgetItem("Device"))
 		for row in range(1+self.comboTable.rowCount()):
 			self.comboTable.removeRow(0)
-		for (row,device) in enumerate(self.metric_dict[str(metric)]):
-			self.comboTable.insertRow(row)
-			self.comboTable.setItem(row, 0, QTableWidgetItem(device))
+		if str(metric) in self.metric_dict:
+			for (row,device) in enumerate(self.metric_dict[str(metric)]):
+				self.comboTable.insertRow(row)
+				self.comboTable.setItem(row, 0, QTableWidgetItem(device))
 		self.allCombos(True)
 
 	def metricCurrent(self):
@@ -140,9 +141,10 @@ class SarView (QMainWindow, Ui_SarView):
 		self.comboTable.setHorizontalHeaderItem(0, QTableWidgetItem("Metric"))
 		for row in range(1+self.comboTable.rowCount()):
 			self.comboTable.removeRow(0)
-		for (row,metric) in enumerate(self.device_dict[str(metric)]):
-			self.comboTable.insertRow(row)
-			self.comboTable.setItem(row, 0, QTableWidgetItem(metric))
+		if str(metric) in self.device_dict:
+			for (row,metric) in enumerate(self.device_dict[str(metric)]):
+				self.comboTable.insertRow(row)
+				self.comboTable.setItem(row, 0, QTableWidgetItem(metric))
 		self.allCombos(True)
 
 	def deviceCurrent(self):
@@ -174,7 +176,7 @@ class SarView (QMainWindow, Ui_SarView):
 		for metric in keys:	
 			self.metricCombo.addItem(metric)
 		
-		self.deviceSelect(self.deviceCombo.currentText())	
+		self.deviceCurrent()
 
 	def openFile(self):
 		filename=QFileDialog.getOpenFileName(self, "Select A SAR File", filter="*.sadf")
