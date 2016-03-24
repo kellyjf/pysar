@@ -150,6 +150,7 @@ class SarView (QMainWindow, Ui_SarView):
 
 	def processFile(self, filename):
 		self.filename=filename
+		self.setWindowTitle(filename.split("/")[-1])
 		self.device_dict={}
 		self.metric_dict={}
 		self.metricCombo.clear()
