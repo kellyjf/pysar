@@ -8,7 +8,7 @@ UIFILES := ui_sarview.py ui_export.py
 all : $(UIFILES)
 
 test: $(UIFILES)
-	python sarview.py test.sadf
+	python __main__.py test.sadf
 
 ui_%.py : %.ui
 	pyuic4 -i 0 -o $@ $<

@@ -23,6 +23,16 @@
       <item>
        <widget class="QComboBox" name="metricCombo"/>
       </item>
+      <item>
+       <widget class="QComboBox" name="typeCombo"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="graphButton">
+        <property name="text">
+         <string>Graph</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
@@ -57,7 +67,7 @@
      <x>0</x>
      <y>0</y>
      <width>540</width>
-     <height>21</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">

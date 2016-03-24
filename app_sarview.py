@@ -17,23 +17,43 @@ class SarView (QMainWindow, Ui_SarView):
 
 	[MODE_DEVICE, MODE_METRIC] = range(2)
 
+	options = [ ('-A','All'), ('-b', 'I/O Transfer Rates') , ('-d', 'Block Devices'),
+ 		('-H', 'Hugepages') ,('-I ALL', 'Interrupts'), ('-n ALL', 'Network'),
+		('-P', 'Processor') , ('-q', 'Run Queue'),('-r', 'Memory Use'),
+		('-u ALL', 'CPU Use'), ('-v', 'Inodes and Files'),('-W', 'Swap'),
+		('-y', 'TTY Activity') ]
+
 	def __init__(self, Parent=None, filename=None):
 		super(QMainWindow,self).__init__(Parent)
 		self.setupUi(self)
 
+		self.filename=None
+		self.flagmap={}
+		self.mode=SarView.MODE_DEVICE
+		for opt in SarView.options:
+			(flag,label)=opt
+			label=unicode(label)
+			self.flagmap[label]=flag
+			self.typeCombo.addItem(label)
+
+		self.typeCombo.setCurrentIndex(self.typeCombo.findText(u'Run Queue'))
+		self.sarflag=self.flagmap[u'Run Queue']
+
 		self.connect(self.action_Open, SIGNAL("activated()"), self.openFile)
 		self.connect(self.action_Plot, SIGNAL("activated()"), self.drawGraph)
+		self.connect(self.graphButton, SIGNAL("clicked()"), self.drawGraph)
 		self.connect(self.action_Export, SIGNAL("activated()"), self.exportSettings)
 		self.connect(self.action_Lines, SIGNAL("triggered(bool)"), self.toggleLines)
 		self.connect(self.action_All, SIGNAL("triggered(bool)"), self.allCombos)
 		self.connect(self.metricCombo, SIGNAL("currentIndexChanged(QString)"), self.metricSelect)
 		self.connect(self.deviceCombo, SIGNAL("currentIndexChanged(QString)"), self.deviceSelect)
+		self.connect(self.typeCombo, SIGNAL("currentIndexChanged(QString)"), self.flagSelect)
 
 		self.device_dict={}
 		self.metric_dict={}
 		
-		self.connect(self.action_Devices, SIGNAL("activated()"), self.deviceCombo.showPopup)
-		self.connect(self.action_Metrics, SIGNAL("activated()"), self.metricCombo.showPopup)
+		self.connect(self.action_Devices, SIGNAL("activated()"), self.deviceCurrent)
+		self.connect(self.action_Metrics, SIGNAL("activated()"), self.metricCurrent)
 
 		self.output = None
 		self.format = None
@@ -42,6 +62,11 @@ class SarView (QMainWindow, Ui_SarView):
 
 		if(filename != None):
 			self.processFile(filename)
+
+	def flagSelect(self, newlabel):
+		self.sarflag=self.flagmap[str(newlabel)]
+		if self.filename:
+			self.processFile(self.filename)
 
 	def devpop(self):
 		self.deviceCombo.showPopup()	
@@ -64,15 +89,20 @@ class SarView (QMainWindow, Ui_SarView):
 		plots=[]
 		metname=str(self.metricCombo.currentText())
 		devname=str(self.deviceCombo.currentText())
-		for item in self.comboTable.selectedItems():
-			if self.mode==SarView.MODE_METRIC:
-				devname=item.text()
-				filter=" \"<(sadf -U -- -A %s | awk -vdev=%s -vmet=%s 'NR==1{off=$3}$4==dev&&$5==met{print $3-off,$6}')\" using 1:2 with lines title \"%s\""%(self.filename, devname, metname,devname)
-			elif self.mode==SarView.MODE_DEVICE:
-				metname=item.text()
-				filter=" \"<(sadf -U -- -A %s | awk -vdev=%s -vmet=%s 'NR==1{off=$3}$4==dev&&$5==met{print $3-off,$6}')\" using 1:2 with lines title \"%s\""%(self.filename, devname, metname,metname)
+		for rng in self.comboTable.selectedRanges():
+			print range(rng.topRow(),rng.bottomRow()+1)
+			for row in range(rng.topRow(),rng.bottomRow()+1):
+				item=self.comboTable.item(row,0)
+				print row, item, item.text()
+				if self.mode==SarView.MODE_METRIC:
+					devname=item.text()
+					filter=" \"<(sadf -U -- %s %s | awk -vdev=%s -vmet=%s 'NR==1{off=$3}$4==dev&&$5==met{print $3-off,$6}')\" using 1:2 with lines title \"%s\""%(self.sarflag, self.filename, devname, metname,devname)
+				elif self.mode==SarView.MODE_DEVICE:
+					metname=item.text()
+					filter=" \"<(sadf -U -- %s %s | awk -vdev=%s -vmet=%s 'NR==1{off=$3}$4==dev&&$5==met{print $3-off,$6}')\" using 1:2 with lines title \"%s\""%(self.sarflag, self.filename, devname, metname,metname)
 
-			plots.append(filter)
+
+				plots.append(filter)
 		
 		proc=subprocess.Popen(["gnuplot","-p"], stdin=subprocess.PIPE)
 		if self.output != None:
@@ -102,6 +132,10 @@ class SarView (QMainWindow, Ui_SarView):
 			self.comboTable.setItem(row, 0, QTableWidgetItem(device))
 		self.allCombos(True)
 
+	def metricCurrent(self):
+		self.metricSelect(self.metricCombo.currentText())
+
+
 	def deviceSelect(self, metric):
 		self.mode=SarView.MODE_DEVICE
 		self.comboTable.clear()
@@ -113,12 +147,17 @@ class SarView (QMainWindow, Ui_SarView):
 			self.comboTable.setItem(row, 0, QTableWidgetItem(metric))
 		self.allCombos(True)
 
+	def deviceCurrent(self):
+		self.deviceSelect(self.deviceCombo.currentText())
+
 	def processFile(self, filename):
 		self.filename=filename
 		self.device_dict={}
 		self.metric_dict={}
+		self.metricCombo.clear()
+		self.deviceCombo.clear()
 		proc=subprocess.Popen(
-			"sadf -U -- -A %s | awk '{print $4,$5}'|sort |uniq"%(filename),
+			"sadf -U -- %s %s | awk '{print $4,$5}'|sort |uniq"%(self.sarflag, filename),
 			shell=True, stdout=subprocess.PIPE)
 		combos=proc.stdout.readlines()
 		for line in combos:
@@ -136,7 +175,7 @@ class SarView (QMainWindow, Ui_SarView):
 		for metric in keys:	
 			self.metricCombo.addItem(metric)
 		
-		
+		self.deviceSelect(self.deviceCombo.currentText())	
 
 	def openFile(self):
 		filename=QFileDialog.getOpenFileName(self, "Select A SAR File", filter="*.sadf")
